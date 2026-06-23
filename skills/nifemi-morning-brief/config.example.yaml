@@ -1,0 +1,48 @@
+# config.example.yaml
+# Copy this file to config.yaml and fill in your own values.
+# config.yaml is gitignored — never commit it.
+# ---------------------------------------------------------------
+
+# YOU
+slack_user_id: "UXXXXXXXXX"          # Your Slack user ID — brief is DM'd here
+                                      # Find it: Slack → your profile → ... → Copy member ID
+timezone: "Africa/Lagos"              # Your timezone (e.g. Europe/London, America/Toronto)
+
+# YOUR ATLASSIAN ACCOUNT
+jira_assignee_id: "712020:XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"   # Your Atlassian account ID
+                                                                    # Find it in your Jira profile URL
+
+# CONNECTIONS — set false if you don't have access to that tool
+sources:
+  intercom: true
+  gmail: true
+  google_drive: true
+  google_calendar: true
+  notion: true
+  slack: true
+  jira: true
+  fireflies: true
+
+# NOTION — shared across Pesa team. Only change if workspace changes.
+notion:
+  prd_db:          "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"
+  initiatives_db:  "collection://2d9aa57a-ba0b-8015-ab0c-000b73af4171"
+  okr_db:          "collection://29daa57a-ba0b-80d2-8b1e-000b6095bf6a"
+  requests_db:     "collection://2c5aa57a-ba0b-805a-8dcd-000b0d450eff"
+  wiki_page_id:    "10eaa57a-ba0b-803d-9f98-dba7f14ebcd2"
+
+# JIRA — shared across Pesa team
+jira:
+  project_key: "PT"
+  board_url:   "https://pesapeer.atlassian.net/jira/software/projects/PT/boards/101"
+
+# ROUTINE — for Claude Code scheduled runs
+routine:
+  enabled: true
+  time: "07:00"       # Time to run the brief (in your timezone above)
+  days:               # Days to run — remove any you don't want
+    - monday
+    - tuesday
+    - wednesday
+    - thursday
+    - friday
