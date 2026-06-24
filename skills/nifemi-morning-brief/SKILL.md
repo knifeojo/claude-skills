@@ -26,7 +26,7 @@ Before this skill is used for the first time, complete these one-time steps:
 
 ## Execution Order
 
-Run all 9 data pulls, then synthesize into one message and post to Slack.
+Run all 9 data pulls, then run the Step 10 verification pass, then deliver (DM + Canvas + reminders).
 Be thorough — do not skip any source. Nifemi explicitly wants everything.
 
 ⚠️ **Maintainability Note:** The active workstreams, team members, and partner names referenced throughout this skill reflect Pesa's state as of June 2026. Update them when workstreams close or new ones open. Review quarterly.
@@ -519,51 +519,113 @@ and note "No active sprint found — showing recently updated open tickets inste
 
 ---
 
-## Step 8 — Fireflies: Recent Meeting Transcripts
+## Step 8 — Meeting Recaps (email-based; Fireflies optional)
 
-**Goal:** Extract decisions and action items from any meetings recorded in Fireflies in the last 24hrs. This supplements Google Drive notes which are often incomplete or missing.
+**Goal:** Extract decisions and action items from any meeting recaps received in the last 24hrs.
 
+⚠️ **Nifemi does NOT currently use Fireflies.** Do not attempt Fireflies tools unless the connector is explicitly present, and NEVER render a Fireflies section if no real transcript was read. The primary source here is recap emails.
+
+Primary — meeting recap emails (from Step 2's Gmail pull):
+Check the emails already retrieved in Step 2 for meeting recaps — senders like `fathom.video`, `fireflies.ai`, or subjects containing "recap", "meeting notes", "summary". Extract decisions and action items from those.
+
+Optional — only if a Fireflies connector is actually attached this run:
 ```
 Fireflies:search_transcripts
   - date_range: last 24 hours
   - limit: 10
 ```
+If the tool isn't present or returns nothing, skip silently — do not mention Fireflies at all.
 
-For each transcript found, fetch and read it:
-```
-Fireflies:get_transcript
-  - id: [transcript id]
-```
+**Output rule (strict):**
+- Only produce a "Meeting Recaps" section if you actually read at least one real recap (email or transcript).
+- If there were no recaps, OMIT the section entirely. Do NOT write a placeholder or "none found via Fireflies" line.
+- Every item must trace to a recap you actually read this run.
 
-⚠️ If Fireflies tools are unavailable, return an error, or return 0 results due to a connection issue (not genuinely no meetings), note in the brief: "🎙️ Fireflies tool unavailable." Then **fall back to email recaps**: Fireflies and Fathom send meeting recap emails. Check Gmail (from Step 2) for senders like `fireflies.ai`, `fathom.video`, or subjects containing "recap" / "meeting notes" / "summary" — extract decisions and action items from those instead. Do not halt the brief.
-
-To add Fireflies as a proper tool: connect it as a connector in the Claude Code routine settings.
-
-**Output format:**
-- For each meeting: title, date, attendees, key decisions, action items
-- 🎯 Flag any action item explicitly assigned to Nifemi
-- Flag any decisions that contradict or advance current PRDs or epics
-- Cross-reference with Google Drive step — if same meeting appears in both, merge, don't duplicate
-
-**Add to todo list:** Action items assigned to Nifemi from transcripts.
+**Add to todo list:** Action items assigned to Nifemi from recaps you actually read.
 
 ---
 
-## Step 9 — Previous Todo List Check
+## Step 9 — Carry-Over Check (read the rolling Todos Canvas)
 
-**Goal:** Surface items from previous briefs that haven't been completed.
+**Goal:** Surface todo items from previous days that are still unchecked, by reading the persistent "Today's Todos" Canvas.
 
-Read previous briefs from your DM-with-yourself (where all briefs are delivered):
+This skill maintains ONE rolling Canvas (see Delivery section). At the start of each run, read it to find what's still outstanding:
+```
+Slack:slack_read_canvas
+  - canvas_id: [TODOS_CANVAS_ID]   ← stable ID stored after first creation (see Delivery)
+```
+
+If the Canvas ID isn't known yet (first ever run), skip this step — there's nothing to carry over. The Delivery step will create the Canvas.
+
+Scan for checklist items still unchecked (☐, not ✅). These become **Carry-Over items** in today's brief:
+- Flag as ⚠️ overdue if the item was already a carry-over yesterday (i.e. it's been sitting 1+ full day)
+- Preserve their original priority grouping (🔴/🟡/🟢)
+
+If `slack_read_canvas` errors, note: "Carry-over check skipped — could not read Todos Canvas." Do not halt the brief.
+
+### 9b. Self-notes (messages Nifemi sends to himself)
+
+Nifemi uses his own Slack DM (messages to self) as a scratchpad — jotting reminders and action items like "create a PRD for document management" or "update the epic". These MUST be captured.
+
+Read his self-DM for notes since the last brief:
 ```
 Slack:slack_read_channel
-  - channel_id: [FROM CONFIG: slack_user_id]  ← your own user ID doubles as your DM channel
-  - limit: 10 (last 10 messages)
+  - channel_id: [slack_user_id]   ← your own user ID = your self-DM channel
+  - limit: 30
+  - oldest: [timestamp of last brief, or last 24hrs if unknown]
 ```
 
-If this returns an error, note: "Previous todos unavailable — carry-over check skipped." Do not halt the brief.
+From these messages:
+- Treat any message that reads like a task, reminder, or note-to-self as an action item (e.g. "create a PRD for X", "update the epic", "follow up with Y", "remember to Z").
+- Ignore the brief messages the skill itself posted (they start with 🌅) and the Canvas-ID footer lines.
+- Add genuine self-notes to the todo list under the appropriate priority. Default new self-notes to 🟡 Important unless they read as urgent.
+- If a self-note was already actioned (cross-check in Step 10), don't re-add it.
+- Preserve these across days until done — a self-note isn't dropped just because it's old; it's something Nifemi wanted to remember.
 
-Scan for checkbox items (☐) that have not been checked off (✅).
-These become **Carry-Over items** in today's brief — flagged as overdue if >1 day old.
+If this read errors, note: "Self-notes unavailable this run." Do not halt.
+
+---
+
+## Step 10 — Verification Pass (MANDATORY before writing output)
+
+Before composing the brief, challenge your own draft. The goal is a crisp, true, relevant brief — not a long one. Most synthesis errors come from summarising each source in isolation without cross-checking. Do this pass for EVERY 🚨 Critical and 🔴 Must-Do item, and for any factual claim about who did what.
+
+### 10a. Resolution check — is it already done?
+For each Critical / Must-Do item, search for evidence it's already been handled before listing it as outstanding:
+- Search Slack for the user's own reply in the relevant thread/DM:
+  ```
+  Slack:slack_search_public_and_private
+    - query: "[topic keyword] from:[slack_user_id] after:[item date]"
+  ```
+- If the item came from an email, check whether a later email or Slack message says it's resolved, approved, or "done".
+- If you find the user already responded/approved/closed it → do NOT list it as an open action. Either drop it or move it to a "✅ Already handled (no action)" line.
+
+**Concrete example of the failure this prevents:** an access-request email exists, but the user replied "done" in Slack. The email alone makes it look open; the Slack reply proves it's closed. Always check both.
+
+### 10b. Attribution check — who actually did what?
+For any claim of the form "[Person] did X" (commented, sent, requested, decided):
+- Verify the actor against the actual source record (comment author, message sender, email From field).
+- Do NOT assume the owner of a doc authored its comments, or that the other party in a thread is the actor. If the user themselves is the actor, say so.
+- If you cannot confirm who did it → describe the event without naming an actor ("50+ comments on the Card PRD") rather than guessing.
+
+**Concrete example:** the Card PRD had 50+ comments authored by the user (Nifemi), not by Khafilat. Check comment authorship before attributing.
+
+### 10c. Source-honesty check — never claim a source you didn't read
+- If a source returned no data or its tool was unavailable, you MUST NOT describe content as if it came from there.
+- Specifically: if Google Drive returned no meeting-notes docs, do NOT write "from the docs file" or summarise notes as if pulled from Drive. Say "No meeting notes found in Drive."
+- If Fireflies is not connected (the user does not use it), OMIT the Fireflies section entirely — do not render an empty or placeholder Fireflies block. Only include meeting-recap content that actually came from a real source (e.g. a recap email you actually read).
+- Every meeting note, transcript, or decision in the brief must trace to a source you actually pulled this run. If you can't point to where it came from, drop it.
+
+### 10d. Confidence marking (balanced rule)
+- If an item is real but you could not fully confirm its current status → KEEP it, but append `(unconfirmed)` so the user knows to verify.
+- Only DROP an item if you found direct evidence it's resolved (10a) or that it's factually wrong.
+- Never inflate the list. A shorter, verified brief beats a long, padded one. If a section has nothing real, write "Nothing flagged" rather than filling space.
+
+### 10e. Relevance trim
+- Cut anything that doesn't need Nifemi's awareness or action as Head of Product (routine noise, auto-notifications, items owned entirely by others with no decision needed from him).
+- Merge duplicates that appeared in multiple sources into one line.
+
+After this pass, write the brief using only what survived. Note any `(unconfirmed)` count at the top so the user can calibrate trust.
 
 ---
 
@@ -571,14 +633,16 @@ These become **Carry-Over items** in today's brief — flagged as overdue if >1 
 
 Compile everything into one Slack message with this exact structure:
 
+
 ```
 🌅 *NIFEMI'S MORNING BRIEF — [DAY, DATE]*
-_Compiled from: Intercom · Gmail · Google Drive · Notion · Slack (all channels + DMs) · Jira · Fireflies · Calendar_
+_Sources checked: [list ONLY sources that actually returned data this run]_
+_⚠️ [N] items marked (unconfirmed) — verify before acting_
 
 ---
 
 🚨 *CRITICAL — NEEDS YOU TODAY*
-[Items that are urgent, flagged, or overdue — max 5, ordered by severity]
+[Items that are urgent, flagged, or overdue — max 5, ordered by severity. Each verified per Step 10. Append (unconfirmed) where status couldn't be confirmed.]
 
 ---
 
@@ -611,7 +675,7 @@ _Compiled from: Intercom · Gmail · Google Drive · Notion · Slack (all channe
 
 📅 *TODAY'S MEETINGS*
 • [TIME] — [Meeting name] — [attendees]
-  → Prep: [what you need to know/bring]
+  → Prep: [what you need to know/bring — only from sources actually read; if no notes exist, say "no prior notes found"]
 
 ---
 
@@ -633,8 +697,8 @@ _Compiled from: Intercom · Gmail · Google Drive · Notion · Slack (all channe
 
 ---
 
-🎙️ *MEETING TRANSCRIPTS (Fireflies)*
-• [Meeting name] — [key decision or action item assigned to Nifemi]
+🎙️ *MEETING RECAPS* _(include this section ONLY if a real recap was read — otherwise omit entirely)_
+• [Meeting name] — [key decision or action item] — [source: recap email]
 
 ---
 
@@ -645,8 +709,9 @@ _Compiled from: Intercom · Gmail · Google Drive · Notion · Slack (all channe
 
 ---
 
-♻️ *CARRY-OVER FROM PREVIOUS BRIEFS*
-• [Items not yet actioned — marked ⚠️ if >1 day]
+♻️ *CARRY-OVER & YOUR NOTES*
+• [Unactioned items from Todos Canvas — marked ⚠️ if >1 day]
+• 📝 [Self-notes you wrote: e.g. "create PRD for document mgmt", "update the epic"]
 
 ---
 
@@ -671,18 +736,68 @@ _Brief generated: [timestamp WAT]_
 
 ## Delivery
 
-**Read config.yaml first.** Load `slack_user_id` from config — this is both who the brief is for and where it's delivered.
+Three parts, in order: (1) DM the full brief, (2) update the rolling Todos Canvas, (3) set reminders for critical items.
 
-Post the brief as a DM to the user running it:
+`slack_user_id` is your own Slack user ID — sending to it = a DM to yourself.
+
+### Part 1 — DM the full brief
 ```
 Slack:slack_send_message
-  - channel_id: [FROM CONFIG: slack_user_id]  ← sending to your own user ID = DM to yourself
+  - channel_id: [slack_user_id]
   - message: [formatted brief]
 ```
+Send directly, NOT as a draft. If this fails, stop and inform the user — do not retry silently.
 
-**Do NOT send as a draft.** Send directly so it lands immediately.
+### Part 2 — Update the rolling "Today's Todos" Canvas
 
-**If send fails:** Stop. Inform the user that Slack delivery failed. Do not retry silently.
+This skill maintains ONE persistent Canvas as your live working todo list. It is updated in place each day — checked items clear, unchecked items remain, new items are added.
+
+**Canvas content** — rebuild the checklist from today's full todo set (carry-overs + new), grouped by priority:
+```
+# 📋 Today's Todos — [DATE]
+
+## 🔴 Must Do
+☐ [task] — [source]
+☐ [task] — [source]
+
+## 🟡 Important
+☐ [task] — [source]
+
+## 🟢 Watch / Monitor
+☐ [task] — [source]
+
+_Last updated: [timestamp WAT]_
+```
+
+**Maintaining a stable Canvas ID:**
+- The first time this skill runs, no Todos Canvas exists. Create one:
+  ```
+  Slack:slack_create_canvas
+    - title: "Nifemi — Today's Todos"
+    - content: [checklist markdown above]
+  ```
+  Record the returned `canvas_id`. Append it to the brief DM as a footer line: `📋 Todos Canvas ID: [canvas_id]` so it's recoverable, and note it should be saved in config as `todos_canvas_id` for future runs.
+- On every subsequent run, find the existing Canvas ID (from config `todos_canvas_id`, or by reading it from the most recent brief DM footer) and UPDATE it in place:
+  ```
+  Slack:slack_update_canvas
+    - canvas_id: [todos_canvas_id]
+    - content: [rebuilt checklist]
+  ```
+- **Preserve checked state:** before overwriting, you already read the Canvas in Step 9. Any item the user manually checked (✅) and that is now resolved should NOT be re-added. Only carry forward items still unchecked, plus genuinely new items.
+
+If Canvas tools error, note in the DM: "Todos Canvas update failed — todos are in this message only." Do not halt.
+
+### Part 3 — Reminders for 🔴 Must Do items only
+
+For each 🔴 Must Do item, set a same-day Slack reminder so it actively nudges:
+```
+Slack:slack_send_message
+  - channel_id: [slack_user_id]
+  - message: "/remind me [short task description] today at 2pm"
+```
+(Slack 2026 only allows reminders to yourself or a channel — self is correct here.) Cap at the top 5 Must Do items to avoid spam. Pick a sensible nudge time (default 2pm WAT) unless the item has its own deadline.
+
+If reminders fail, skip silently — the DM and Canvas already carry the items.
 
 ---
 
@@ -710,15 +825,21 @@ Slack:slack_send_message
 
 ## Quality Bar
 
-Before posting, verify:
-- [ ] All 9 sources were checked (Intercom, Gmail, Drive, Notion, Slack, Jira, Fireflies, Calendar, Previous todos)
+Before finishing, verify:
+- [ ] All 9 sources were checked (Intercom, Gmail, Drive, Notion, Slack, Jira, Recaps, Calendar, Carry-overs)
+- [ ] **Step 10 verification pass run:** every Critical/Must-Do checked for prior resolution
+- [ ] **Attribution verified:** no guessed "who did what" — actors confirmed against source
+- [ ] **No phantom sources:** nothing described as from Drive/Fireflies/etc. unless actually read
+- [ ] **Self-notes captured:** messages Nifemi wrote to himself are folded into todos, not dropped
 - [ ] Every Slack channel Nifemi is in was read — not just named ones
 - [ ] Every DM with recent activity was checked
 - [ ] Todo items have a source reference (where it came from)
 - [ ] No duplicate tasks in the list
 - [ ] Critical items are at the top
 - [ ] Calendar items have prep context, not just meeting names
-- [ ] Carry-over items from previous brief are included
-- [ ] Jira blockers are flagged if any exist
+- [ ] Carry-over items were read from the Todos Canvas (not re-derived from scratch)
+- [ ] Jira active sprint state is summarised; blockers flagged
 - [ ] Fireflies and Drive meeting notes are merged — no duplicates
-- [ ] Message is posted to channel (not drafted)
+- [ ] **DM sent** (not drafted)
+- [ ] **Todos Canvas created or updated in place** — checked items not re-added
+- [ ] **Reminders set for top 🔴 Must Do items** (max 5)

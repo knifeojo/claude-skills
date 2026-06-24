@@ -8,6 +8,10 @@ slack_user_id: "UXXXXXXXXX"          # Your Slack user ID — brief is DM'd here
                                       # Find it: Slack → your profile → ... → Copy member ID
 timezone: "Africa/Lagos"              # Your timezone (e.g. Europe/London, America/Toronto)
 
+# ROLLING TODOS CANVAS — leave blank on first run; the skill creates the Canvas
+# and reports its ID. Paste that ID here so future runs update the same Canvas.
+todos_canvas_id: ""
+
 # YOUR ATLASSIAN ACCOUNT
 jira_assignee_id: "712020:XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"   # Your Atlassian account ID
                                                                     # Find it in your Jira profile URL
