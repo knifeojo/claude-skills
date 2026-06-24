@@ -223,64 +223,64 @@ If `Google Drive:search_files` returns an error or zero results, note in the bri
 
 **Goal:** Every page and database entry touched in the last 24hrs across the entire Product Wiki — all movement, whether or not it needs attention.
 
-⚠️ Do NOT use keyword search for this step. Query databases directly by ID. Keyword search misses entries that don't contain specific words.
+⚠️ **Plan-tier note:** `notion-query-database-view` requires a Notion Business plan, which this workspace does NOT have. It will fail. Use `notion-search` with `data_source_url` + filters instead — this works on the current plan. Do not use view queries.
+
+⚠️ Limitation: `notion-search` filters on `created_date_range` (creation), not `last_edited_time`. To catch status changes on existing entries, run an unfiltered search per database and check each result's `last_edited_time` client-side. This is best-effort — note it in the brief.
 
 ### 4a. PRD Database
-
-Step 1 — Catch newly created PRDs:
 ```
+# Newly created PRDs
 Notion:notion-search
-  - query: "" (any)
+  - query: ""
   - data_source_url: "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"
   - filters: { created_date_range: { start_date: YESTERDAY } }
   - page_size: 25
-```
 
-Step 2 — Catch status changes on existing PRDs (query full database, filter by last edited):
+# Recently edited PRDs (status changes) — unfiltered, sorted by last edited
+Notion:notion-search
+  - query: ""
+  - data_source_url: "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"
+  - sort: { direction: descending, timestamp: last_edited_time }
+  - page_size: 25
 ```
-Notion:notion-query-database-view
-  - view_url: "https://app.notion.com/p/21eaa57aba0b8071bd02f8967a8d887a"
-  - page_size: 100
-```
-Filter results client-side to entries where `last_edited_time >= yesterday`. For each match, note the current Status — flag anything that moved to In Progress, In Review, Approved, or Blocked.
-
-If results paginate (`has_more: true`), fetch subsequent pages until exhausted.
+From the second query, keep only entries with `last_edited_time >= yesterday`. Flag anything that moved to In Progress, In Review, Approved, or Blocked.
 
 ### 4b. Product Initiatives Database
 ```
 Notion:notion-search
-  - query: "" (any)
+  - query: ""
   - data_source_url: "collection://2d9aa57a-ba0b-8015-ab0c-000b73af4171"
   - filters: { created_date_range: { start_date: YESTERDAY } }
   - page_size: 25
+
+Notion:notion-search
+  - query: ""
+  - data_source_url: "collection://2d9aa57a-ba0b-8015-ab0c-000b73af4171"
+  - sort: { direction: descending, timestamp: last_edited_time }
+  - page_size: 25
 ```
-Also query the full table view to catch status changes on existing initiatives:
-```
-Notion:notion-query-database-view
-  - view_url: "https://app.notion.com/p/2d9aa57aba0b806f90feceae52f10e55?v=2ffaa57aba0b8050a30a000ce8aad3b3"
-  - page_size: 100
-```
-Filter results to entries where `last_edited_time >= yesterday`.
+Keep entries edited since yesterday.
 
 ### 4c. OKRs & Projects Tracker
 ```
-Notion:notion-query-database-view
-  - view_url: "https://app.notion.com/p/29daa57aba0b807d8c15f7f10d60ce8a?v=29daa57aba0b80829c67000cc5bcc2ab"
-  - page_size: 100
-```
-Filter results to entries where `last_edited_time >= yesterday`.
+Notion:notion-search
+  - query: ""
+  - data_source_url: "collection://29daa57a-ba0b-80d2-8b1e-000b6095bf6a"
+  - filters: { created_date_range: { start_date: YESTERDAY } }
+  - page_size: 25
 
-Also query Nifemi's personal board view for his assigned items:
+Notion:notion-search
+  - query: ""
+  - data_source_url: "collection://29daa57a-ba0b-80d2-8b1e-000b6095bf6a"
+  - sort: { direction: descending, timestamp: last_edited_time }
+  - page_size: 25
 ```
-Notion:notion-query-database-view
-  - view_url: "https://app.notion.com/p/29daa57aba0b807d8c15f7f10d60ce8a?v=37aaa57aba0b80debb46000ceaa88d1b"
-  - page_size: 100
-```
+Keep entries edited since yesterday. 🚨 Flag any item that is Blocked, At Risk, or On Hold.
 
 ### 4d. Product Requests Database
 ```
 Notion:notion-search
-  - query: "" (any)
+  - query: ""
   - data_source_url: "collection://2c5aa57a-ba0b-805a-8dcd-000b0d450eff"
   - filters: { created_date_range: { start_date: YESTERDAY } }
   - page_size: 25
@@ -444,39 +444,78 @@ Cross-reference meeting context with:
 
 ---
 
-## Step 7 — Jira: Open Issues & Blockers
+## Step 7 — Jira: Active Sprint State + Blockers
 
-**Goal:** Surface any Jira tickets assigned to Nifemi or his team that are blocked, overdue, or need a decision.
+**Goal:** Give Nifemi (Head of Product) a complete picture of where the current sprint stands — not just his own tickets. Sprint health, blockers, stalling work, and anything he's mentioned on or watching.
 
 Step 1 — Verify cloud ID and project key before running any queries:
 ```
 Atlassian:getAccessibleAtlassianResources
 Atlassian:getVisibleJiraProjects
 ```
-Use the returned `cloudId` in all subsequent calls. Confirm the Pesa project key (expected: `PT`, set in config.yaml). If it differs, substitute the correct key in all JQL queries below. If 0 resources or projects return, note "Jira unavailable" in the brief and skip this step.
+Use the returned `cloudId` in all subsequent calls. Confirm the Pesa project key (expected: `PT`). If 0 resources or projects return, note "Jira unavailable" in the brief and skip this step.
 
-Step 2 — Run queries using confirmed cloudId and project key:
+Step 2 — Run sprint and blocker queries:
 ```
+# Full active sprint — all issues, all statuses
 Atlassian:searchJiraIssuesUsingJql
-  - jql: "assignee = "[FROM CONFIG: jira_assignee_id]" AND statusCategory != Done ORDER BY updated DESC"
-  - maxResults: 50
+  - jql: "project = PT AND sprint in openSprints() ORDER BY status ASC, updated DESC"
+  - maxResults: 100
 
+# Blocked tickets anywhere in the project (not just sprint)
 Atlassian:searchJiraIssuesUsingJql
-  - jql: "project in (PT) AND status = 'Blocked' AND updated >= -1d ORDER BY updated DESC"
+  - jql: "project = PT AND (status = 'Blocked' OR flagged = Impediment) ORDER BY updated DESC"
   - maxResults: 30
 
+# Stalling — sprint tickets not updated in 48hrs+ and not done
 Atlassian:searchJiraIssuesUsingJql
-  - jql: "project in (PT) AND issueType = Epic AND statusCategory != Done ORDER BY updated DESC"
+  - jql: "project = PT AND sprint in openSprints() AND statusCategory != Done AND updated <= -2d ORDER BY updated ASC"
+  - maxResults: 30
+
+# Bugs / incidents in the sprint
+Atlassian:searchJiraIssuesUsingJql
+  - jql: "project = PT AND sprint in openSprints() AND issuetype in (Bug, Incident) ORDER BY priority DESC"
+  - maxResults: 30
+
+# Tickets Nifemi is mentioned on or watching (uses currentUser — auth identity, not config)
+Atlassian:searchJiraIssuesUsingJql
+  - jql: "project = PT AND (watcher = currentUser() OR comment ~ currentUser()) AND statusCategory != Done ORDER BY updated DESC"
   - maxResults: 20
 ```
 
-**Output format:**
-- Tickets assigned to Nifemi with no recent update (>48hrs)
-- Blocked tickets — what's blocking, who owns the blocker
-- Active epics: status summary, any overdue milestones
-- 🚨 Any ticket that is blocking engineering progress on active workstreams
+If `openSprints()` returns nothing (board may use kanban, not sprints), fall back to:
+```
+Atlassian:searchJiraIssuesUsingJql
+  - jql: "project = PT AND statusCategory != Done AND updated >= -1d ORDER BY updated DESC"
+  - maxResults: 50
+```
+and note "No active sprint found — showing recently updated open tickets instead."
 
-**Add to todo list:** Any ticket requiring Nifemi's decision, unblock action, or review.
+**Output format:**
+
+*Sprint health*
+- Sprint name + end date if available
+- Status breakdown: To Do: X | In Progress: X | In Review: X | Done: X | Blocked: X
+- Rough completion: X of Y issues done
+
+*🚨 Blockers* (always flag)
+- [Ticket key] — [summary] — what's blocking, who owns it
+
+*⏳ Stalling*
+- Sprint tickets with no update in 48hrs+ — [key, summary, assignee, days stalled]
+
+*🐞 Bugs / incidents in sprint*
+- [key, summary, priority, assignee]
+
+*👀 You're mentioned / watching*
+- [key, summary, latest activity]
+
+*Unowned work*
+- Any sprint ticket with no assignee
+
+**Add to todo list:** Blockers needing Nifemi's decision, stalling tickets on critical workstreams, bugs flagged high priority, tickets where he's been asked something in a comment.
+
+⚠️ Note: this step uses `currentUser()` (resolved from the authenticated Atlassian session), NOT a hardcoded assignee ID. No personal Jira ID needed in config.
 
 ---
 
@@ -496,7 +535,9 @@ Fireflies:get_transcript
   - id: [transcript id]
 ```
 
-⚠️ If Fireflies tools are unavailable, return an error, or return 0 results due to a connection issue (not genuinely no meetings), note in the brief: "🎙️ Fireflies unavailable — meeting transcripts not checked. Review manually." Do not halt the brief.
+⚠️ If Fireflies tools are unavailable, return an error, or return 0 results due to a connection issue (not genuinely no meetings), note in the brief: "🎙️ Fireflies tool unavailable." Then **fall back to email recaps**: Fireflies and Fathom send meeting recap emails. Check Gmail (from Step 2) for senders like `fireflies.ai`, `fathom.video`, or subjects containing "recap" / "meeting notes" / "summary" — extract decisions and action items from those instead. Do not halt the brief.
+
+To add Fireflies as a proper tool: connect it as a connector in the Claude Code routine settings.
 
 **Output format:**
 - For each meeting: title, date, attendees, key decisions, action items
@@ -581,10 +622,14 @@ _Compiled from: Intercom · Gmail · Google Drive · Notion · Slack (all channe
 
 ---
 
-🎫 *JIRA: BLOCKERS & OPEN TICKETS*
-• [Blocked ticket] — [what's blocking] — [owner]
-• [Ticket assigned to Nifemi with no update >48hrs]
-• [Epic status summary]
+🎫 *JIRA: ACTIVE SPRINT STATE*
+• Sprint: [name] (ends [date]) — [X of Y done]
+• Status: To Do X · In Progress X · In Review X · Blocked X · Done X
+• 🚨 Blockers: [key — summary — owner], or "None"
+• ⏳ Stalling (>48hrs): [key — summary — assignee]
+• 🐞 Bugs in sprint: [key — summary — priority]
+• 👀 You're mentioned/watching: [key — summary]
+• Unowned: [any sprint ticket with no assignee]
 
 ---
 
