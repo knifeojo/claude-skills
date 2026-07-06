@@ -1,0 +1,42 @@
+# ship-report config
+# Copy to config.yaml and fill in the personal section. config.yaml is gitignored.
+#   cp config.example.yaml config.yaml
+
+# ---------- Shared team config (same for everyone; safe to commit) ----------
+github_org: pesapeer
+default_branch: main            # production deploys from main (Cloud Run auto-deploy)
+
+repos:                          # repos to scan for merged PRs
+  - pesapeer-backend
+  - pesapeer-mobile
+  - pesapeer-console
+  - pesa-card-nimbus
+  - orion
+  - fund-wallet-backend
+  - providersdks
+  - pesa-alignr
+
+jira:
+  project: PT
+  board_url: https://pesapeer.atlassian.net/jira/software/projects/PT/boards/101
+
+# Map conventional-commit scope / keywords -> workstream bucket (for the exec grouping).
+# Matching is case-insensitive against the PR title scope and keywords.
+workstreams:
+  "Onboarding & activation":            [auth, onboarding, referral-code, registration, kyc, username, analytics, signup, sign-up]
+  "Multi-currency funding & transfers": [moneytransfer, transfers, fundwallet, wallet, swiftx, clearbank, fincra, payaza, terrapay, fx, virtual-account, aed, inr, gbp, ngn, zand, lean]
+  "Savings":                            [savings, personalsavings, personal-savings, griffin, group-savings]
+  "Cards":                              [card, nimbus, tribe]
+  "US corridor & compliance":           [trice, cybrid, sanctions, limits, wells, compliance]
+  "Growth":                             [referral, attribution, rewards, credit]
+  "Reliability & platform":             [ci, deps, perf, performance, deadlock, retry, otel, security, privacy, format, tooling, foundation]
+  "CS & admin tooling":                 [admin, cli, reconcile, resync, backfill, timeline]
+
+# Scopes treated as noise: excluded from the EXEC report, kept only in the detailed digest.
+exec_exclude_scopes: [deps, ci, chore, test, format, tooling, renovate]
+
+# ---------- Personal config (fill your own; keep out of git) ----------
+timezone: Africa/Lagos          # WAT — used to compute the weekly window
+output: print                   # print  = show in chat (default)
+                                # slack  = DM the report to yourself
+# slack_user_id: "UXXXXXXXX"    # your Slack user ID — required only if output: slack

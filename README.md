@@ -11,6 +11,7 @@ Clone, configure, and run. Each skill is self-contained with its own instruction
 | Skill | What it does | Autonomous? |
 |---|---|---|
 | [🌅 morning-brief](skills/nifemi-morning-brief/) | Daily intelligence sweep across all tools — delivered as a Slack DM | ✅ Runs on schedule |
+| [🚀 ship-report](skills/ship-report/) | What shipped to production across all repos for a period — management report + optional eng digest | ✅ Weekly-ready |
 
 > More skills coming — prd-creation, prd-review, skill-reviewer are in progress.
 
