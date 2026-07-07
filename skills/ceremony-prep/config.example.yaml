@@ -1,0 +1,30 @@
+# ceremony-prep config
+# Copy to config.yaml. config.yaml is gitignored.
+
+# ---------- Shared team config ----------
+jira:
+  project: PT
+  board_url: https://pesapeer.atlassian.net/jira/software/projects/PT/boards/101
+notion:
+  okr_tracker: "collection://29daa57a-ba0b-80d2-8b1e-000b6095bf6a"
+  prd_data_source: "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"
+
+workstreams:
+  - group savings
+  - personal savings
+  - Nibss
+  - onboarding
+  - multicurrency wallets
+  - Telna eSIM
+  - cards
+  - console
+  - transfers/payouts
+  - compliance
+
+# The team began story sizing only recently — do NOT treat missing estimates as a defect.
+first_time_estimation: true
+
+# ---------- Personal config ----------
+timezone: Africa/Lagos
+# team_velocity:        # fill if known, else the skill will ask/mark unknown
+# team_size:

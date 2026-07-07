@@ -1,0 +1,17 @@
+# eod-desk config
+# Copy to config.yaml. config.yaml is gitignored.
+# Shares the shape of the morning-brief config — reuse the same personal values.
+
+# ---------- Personal config ----------
+# slack_user_id: "UXXXXXXXX"     # your Slack user ID (self-DM target); required for Slack delivery
+timezone: Africa/Lagos
+output: slack                    # slack = DM to yourself | print = show in chat
+include_github: true             # summarize PRs merged today + awaiting your review
+
+# ---------- Shared team config ----------
+jira:
+  project: PT
+notion:
+  prd_data_source: "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"
+  okr_tracker:     "collection://29daa57a-ba0b-80d2-8b1e-000b6095bf6a"
+github_org: pesapeer

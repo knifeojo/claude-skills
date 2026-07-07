@@ -1,0 +1,15 @@
+# data-analyst config
+# Copy to config.yaml. config.yaml is gitignored (never commit DB credentials).
+
+# ---------- Shared team config ----------
+dialect: postgres
+schema_reference: "PESA Database Tables.xlsx (sheet: All Tables details, from row 2)"
+
+# ---------- Personal config ----------
+# Optional read-only DB connection. If unset, the skill outputs paste-ready SQL only.
+# db:
+#   connection: ""      # read-only DSN, e.g. postgres://readonly:***@host:5432/pesa
+#   read_only: true
+
+timezone: Africa/Lagos
+# cad_rate_basis: ""    # how CAD-equivalent is derived (rate table name or stored-amount column)

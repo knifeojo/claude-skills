@@ -15,8 +15,11 @@ Clone, configure, and run. Each skill is self-contained with its own instruction
 | [📐 trd-creator](skills/trd-creator/) | Generates a TRD from a PRD + the real code, following the TRD template, linked in the TRD database | On-demand |
 | [📋 prd-creator](skills/prd-creator/) | Drafts a PRD from a feature idea using Pesa's template, creates it in the PRD database | On-demand |
 | [🔍 prd-reviewer](skills/prd-reviewer/) | Reviews a PRD for quality, discrepancy vs code, and missing-TRD governance | On-demand |
+| [🗓️ ceremony-prep](skills/ceremony-prep/) | Backlog / sprint-planning / retro prep from live Jira PT + Notion | On-demand |
+| [📊 data-analyst](skills/data-analyst/) | Plain-English → paste-ready SQL over Pesa's schema, following the SQL conventions | On-demand |
+| [🌙 eod-desk](skills/eod-desk/) | End-of-day wrap — reconciles todos, what moved, sets up tomorrow (Slack DM) | ✅ Evening-ready |
 
-> More skills coming — ceremony-prep, data-analyst, eod-desk, opportunity-evaluator are next.
+> More skills coming — opportunity-evaluator, user-journey-critique, release-notes, testplan are next.
 
 ---
 
