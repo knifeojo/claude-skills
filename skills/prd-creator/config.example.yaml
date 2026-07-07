@@ -1,0 +1,24 @@
+# prd-creator config
+# Copy to config.yaml and adjust local repo paths if needed. config.yaml is gitignored.
+#   cp config.example.yaml config.yaml
+
+# ---------- Shared team config (same for everyone; safe to commit) ----------
+notion:
+  prd_data_source: "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"
+  prd_title_property: "Task name"
+  prd_status_property: "Status"          # Draft | In review | Approved | Deployed
+  templates:
+    new_feature:              "328aa57aba0b80559e1bed55278be501"
+    new_feature_integration:  "328aa57aba0b807b8fedca47fb1b6255"
+    integration:              "328aa57aba0b80d1bd7cf84ac4adb142"
+
+personas: [Tunde, Amara, Sofia, Chidi, Kwame]
+
+# ---------- Personal / environment config ----------
+repos:
+  backend:       "/Users/nifemi/pesapeer-backend"
+  mobile:        "/Users/nifemi/pesapeer-mobile"
+  card_service:  "/Users/nifemi/pesa-card-nimbus"
+  provider_sdks: "/Users/nifemi/providersdks"
+
+default_new_prd_status: "Draft"

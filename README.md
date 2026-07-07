@@ -13,8 +13,10 @@ Clone, configure, and run. Each skill is self-contained with its own instruction
 | [🌅 morning-brief](skills/nifemi-morning-brief/) | Daily intelligence sweep across all tools — delivered as a Slack DM | ✅ Runs on schedule |
 | [🚀 ship-report](skills/ship-report/) | What shipped to production across all repos for a period — management report + optional eng digest | ✅ Weekly-ready |
 | [📐 trd-creator](skills/trd-creator/) | Generates a TRD from a PRD + the real code, following the TRD template, linked in the TRD database | On-demand |
+| [📋 prd-creator](skills/prd-creator/) | Drafts a PRD from a feature idea using Pesa's template, creates it in the PRD database | On-demand |
+| [🔍 prd-reviewer](skills/prd-reviewer/) | Reviews a PRD for quality, discrepancy vs code, and missing-TRD governance | On-demand |
 
-> More skills coming — prd-creation, prd-review, skill-reviewer are in progress.
+> More skills coming — ceremony-prep, data-analyst, eod-desk, opportunity-evaluator are next.
 
 ---
 
