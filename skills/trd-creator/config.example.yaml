@@ -1,0 +1,21 @@
+# trd-creator config
+# Copy to config.yaml and adjust if your local repo paths differ. config.yaml is gitignored.
+#   cp config.example.yaml config.yaml
+
+# ---------- Shared team config (same for everyone; safe to commit) ----------
+notion:
+  prd_data_source:   "collection://21eaa57a-ba0b-8013-b503-000b84aa5aee"   # All Product Requirement Documents
+  trd_data_source:   "collection://2f7aa57a-ba0b-8075-85fb-000b2ca08f82"   # Technical required documentation
+  trd_template_page: "34aaa57a-ba0b-8072-bb48-f685b0348e9b"                # TDR Template (13 sections)
+  trd_title_property:   "Spec Title"
+  trd_status_property:  "Status"          # Draft | In Review | Approved | Implemented
+  trd_prd_relation:     "All  Product Requirement Documents "   # exact name: two spaces after 'All', trailing space
+
+# ---------- Personal / environment config (adjust to your machine) ----------
+repos:
+  backend:      "/Users/nifemi/pesapeer-backend"      # Go
+  mobile:       "/Users/nifemi/pesapeer-mobile"       # Dart/Flutter
+  card_service: "/Users/nifemi/pesa-card-nimbus"      # Go (Tribe card ops)
+  provider_sdks: "/Users/nifemi/providersdks"         # Go
+
+default_new_trd_status: "Draft"
